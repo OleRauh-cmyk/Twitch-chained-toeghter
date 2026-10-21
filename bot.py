@@ -1,30 +1,26 @@
-import cv2
-import numpy as np
-import pyautogui
-import winsound
-import time
+import os
+import requests
 
-# Bereich des Bildschirms definieren (x, y, breite, hoehe)
-# Z.B. dort, wo im Spiel die Höhenmeter angezeigt werden
-BOX = (100, 100, 300, 200)
+# Webhook-URL aus den GitHub Secrets laden
+WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL")
 
-prev_frame = None
+def check_and_notify():
+    if not WEBHOOK_URL:
+        print("Fehler: DISCORD_WEBHOOK_URL wurde nicht gefunden!")
+        return
 
-while True:
-    # Screenshot vom Teilbereich machen
-    img = pyautogui.screenshot(region=BOX)
-    frame = np.array(img)
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    # Hier wird später der Stream-Status oder das Bild geprüft.
+    # Als Test senden wir eine Benachrichtigung an Discord:
+    payload = {
+        "content": "🚨 **Chained Together Stream-Event gestartet!**"
+    }
 
-    if prev_frame is not None:
-        # Differenz zwischen zwei Bildern berechnen (Bewegungsanalyse)
-        diff = cv2.absdiff(prev_frame, gray)
-        score = np.sum(diff)
+    response = requests.post(WEBHOOK_URL, json=payload)
+    if response.status_code in [200, 204]:
+        print("Erfolgreich an Discord gesendet!")
+    else:
+        print(f"Fehler beim Senden: {response.status_code} - {response.text}")
 
-        # Wenn plötzliche/extreme Bildveränderung vorliegt (Sturz/Szenenwechsel)
-        if score > 5000000: 
-            winsound.Beep(1000, 500) # Ton abspielen
-            time.sleep(2) # Pause, um Dauer-Piepen zu verhindern
+if __name__ == "__main__":
+    check_and_notify()
 
-    prev_frame = gray
-    time.sleep(0.5) # Alle 0,5 Sekunden prüfen
